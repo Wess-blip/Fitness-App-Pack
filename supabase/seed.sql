@@ -1,0 +1,17 @@
+insert into public.exercise_library (id,name,equipment,primary_muscles,instructions) values
+('incline-bench','Barbell Incline Bench Press','barbell',array['upper chest','triceps'],'30–45 degree bench; shoulder blades back and down.'),
+('chest-fly','Chest Fly Machine','machine',array['chest'],'Move in an arc and control the stretch.'),
+('lateral-raise','Dumbbell Lateral Raise','dumbbell',array['side delts'],'Lead with elbows; avoid shrugging.'),
+('skull-crusher','EZ-Bar Skull Crusher','ez bar',array['triceps'],'Keep upper arms still.'),
+('rope-pushdown','Rope Triceps Pushdown','cable',array['triceps'],'Elbows pinned; separate rope at bottom.'),
+('lat-pulldown','Lat Pulldown','cable',array['lats'],'Pull elbows toward ribs.'),
+('machine-row','Machine / Chest-Supported Row','machine',array['mid back','lats'],'Chest supported; pause at contraction.'),
+('face-pull','Face Pull','cable',array['rear delts','upper back'],'Pull toward eyes and lead with elbows.'),
+('incline-curl','Incline Dumbbell Curl','dumbbell',array['biceps'],'Control the stretched position.'),
+('hammer-curl','Hammer Curl','dumbbell',array['brachialis','forearms'],'Neutral grip.'),
+('external-rotation','Cable External Rotation','cable',array['rotator cuff'],'Use light weight.'),
+('rdl','Romanian Deadlift','barbell',array['hamstrings','glutes'],'Hinge with the bar close.'),
+('leg-press','Leg Press','machine',array['quads','glutes'],'Knees track over toes.'),
+('calf-press','Leg Press Calf Raise','machine',array['calves'],'Deep stretch and squeeze.'),
+('hip-machine','Hip Abductor / Adductor Machine','machine',array['glutes','adductors'],'Train both directions slowly.'),
+('machine-crunch','Machine Crunch / Sit-Up','machine',array['abs'],'Ribs toward hips.');

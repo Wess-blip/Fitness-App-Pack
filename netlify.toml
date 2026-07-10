@@ -1,0 +1,15 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22.16.0"
+  NPM_VERSION = "10.9.2"
+  NPM_FLAGS = "--prefer-offline --no-audit --no-fund --progress=false"
+  NPM_CONFIG_REGISTRY = "https://registry.npmjs.org/"
+  NPM_CONFIG_FETCH_RETRIES = "5"
+  NPM_CONFIG_FETCH_RETRY_MINTIMEOUT = "10000"
+  NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT = "60000"
+
+[functions]
+  node_bundler = "esbuild"
