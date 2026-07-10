@@ -1,26 +1,40 @@
-# FormLab Fitness — app creation pack
+# FormLab Fitness v1.2 — modular planning and projection app
 
-A mobile-first Next.js PWA for client fitness logging, workout planning, calorie/TDEE calculations, rolling regression calibration and body-composition projections. It is designed for Netlify + Supabase and includes an optional iOS HealthKit bridge.
+A mobile-first Next.js PWA for fitness planning, body-composition projection, workout scheduling and optional logging. It is designed for Netlify + Supabase and includes a HealthKit bridge scaffold for Apple Health.
 
-## What is already built
+## Main product flow
 
-- Simple five-tab phone interface: Home, Log, Plan, Progress and More
-- Universal goal engine for fat loss, maintenance, recomp and muscle gain
-- Mifflin, Cunningham and Katch-McArdle BMR calculations
-- Confidence-weighted hybrid BMR
-- Modular activity modes that prevent double counting
-- Optional ACSM treadmill module by time or target active calories
-- Macro-specific TEF with a 10% fallback
+1. **Setup** — user-specific static profile, dynamic body data, goals, activity modules and model settings.
+2. **Plan** — saved 3-day or 6-day PPL schedule with workout graphics.
+3. **Projection** — Dashboard Pro-style weight, PBF, LBM, TDEE, intake, deficit and target-date modelling.
+4. **Log** — optional food, weight, activity, workout and measurement entries.
+5. **Progress** — expandable observed weight/trend and nutrition charts.
+
+Logging improves calibration, but the planning and projection engine works immediately from Setup.
+
+## Built features
+
+- Richer mobile interface with colour-coded metrics and expandable chart panels
+- Google login using Supabase OAuth
+- Local-first data persistence when signed out
+- Automatic Supabase cloud sync when signed in
+- Static profile and dynamic baseline setup
+- Goal input for fat loss, maintenance, recomp and muscle gain
+- Automatic or manual TDEE and calorie target values
+- Modular activity modes that prevent double counting:
+  - wearable total
+  - manual total
+  - component-based activity
+- Optional treadmill calculation by time or target active calories
+- Mifflin, Cunningham and Katch-McArdle calculations with editable normalized weights
+- Macro-specific TEF with editable fallback
 - Robust rolling TDEE regression with Huber weighting and confidence scoring
-- Conservative / expected / optimistic LBM projection logic
-- Goal and safety stopping conditions
-- PPL 3-day or 6-day scheduling with the supplied workout graphics
-- Local demo logging so the interface works before Supabase is connected
-- Supabase schema, RLS policies and private storage buckets
-- Apple HealthKit SwiftUI bridge for weight, active energy, resting energy, steps and workouts
-- Optional OpenAI food-photo endpoint
-- Automated nightly recalculation endpoint and Netlify scheduled function
-- Unit tests, type checks, lint and production build verification
+- Conservative, expected and optimistic lean-mass scenarios
+- Projection target/safety stopping
+- Saved PPL scheduling and workout graphics
+- Supabase schema, RLS and private storage
+- Apple HealthKit bridge scaffold
+- Optional food-photo analysis endpoint
 
 ## Run locally
 
@@ -32,7 +46,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Verify before every deployment
+## Verify before deployment
 
 ```bash
 npm run lint
@@ -41,39 +55,35 @@ npm test
 npm run build
 ```
 
-## Connect Supabase
+## Supabase setup
 
-1. Create a Supabase project.
-2. Run `supabase/migrations/001_initial_schema.sql` in the SQL editor.
+For a new database:
+
+1. Run `supabase/migrations/001_initial_schema.sql`.
+2. Run `supabase/migrations/002_user_app_state_and_auth.sql`.
 3. Run `supabase/seed.sql`.
-4. Add the variables from `.env.example` to `.env.local` and Netlify.
-5. Implement the production auth screens and replace the demo local-storage repository with Supabase calls.
 
-## Deploy to Netlify
+For an existing v1.1 database, run only migration 002.
 
-1. Push this folder to a private GitHub repository.
-2. In Netlify, choose **Add new project → Import an existing project**.
-3. Select the repository.
-4. Add the environment variables.
-5. Deploy. Netlify detects Next.js automatically.
+Then follow `docs/V1_2_UPGRADE.md` to enable Google login and add Netlify environment variables.
 
-This release pins Node/npm and uses a public-registry lockfile. Do not regenerate `package-lock.json` with a private registry unless you replace private `resolved` URLs before committing.
+## Updating the live site
 
-Read these in order:
+Read `docs/GITHUB_FOR_BEGINNERS.md`. The normal sequence is:
 
-1. `docs/MODEL_SPEC.md`
-2. `docs/WORKBOOK_AUDIT.md`
-3. `docs/BACKEND_EDITING.md`
-4. `docs/NETLIFY_DEPLOYMENT.md`
-5. `docs/APPLE_HEALTH.md`
-6. `docs/TESTING_REPORT.md`
+1. Copy changed files into your cloned GitHub repository.
+2. Commit.
+3. Push to `main`.
+4. Netlify automatically builds and publishes the pushed version.
 
 ## Key edit points
 
-- Model thresholds: `src/config/model-config.ts`
-- Engine formulas: `src/lib/engine/`
+- Default user inputs: `src/data/default-app-state.ts`
+- Input precedence and linking: `src/lib/app-state/resolve.ts`
+- Core formulas: `src/lib/engine/`
+- Model safety/configuration: `src/config/model-config.ts`
 - Workout templates: `src/data/workout-program.ts`
-- Database: `supabase/migrations/001_initial_schema.sql`
-- Mobile UI: `src/app/` and `src/components/`
+- App UI: `src/app/` and `src/components/`
+- Cloud state/auth migration: `supabase/migrations/002_user_app_state_and_auth.sql`
 
-Increment `engineVersion` whenever a model change can alter user recommendations.
+Increment `engineVersion` whenever a formula or safety boundary changes user recommendations.

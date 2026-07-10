@@ -6,6 +6,11 @@ export type ActivityMode = "wearable-total" | "manual-total" | "components";
 export type CaloriePlanMode = "fixed" | "goal-driven";
 export type ProjectionScenario = "conservative" | "expected" | "optimistic";
 
+export interface CalculationOptions {
+  bmrWeights?: { mifflin: number; cunningham: number; katchMcArdle: number };
+  tefFallbackRate?: number;
+}
+
 export interface BodyProfile {
   sex: SexForFormula;
   ageYears: number;

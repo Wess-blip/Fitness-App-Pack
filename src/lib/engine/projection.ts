@@ -1,5 +1,5 @@
 import { MODEL_CONFIG } from "@/config/model-config";
-import type { ActivityDefaults, BodyProfile, GoalSettings, ProjectionResult, ProjectionScenario } from "@/types/fitness";
+import type { ActivityDefaults, BodyProfile, CalculationOptions, GoalSettings, ProjectionResult, ProjectionScenario } from "@/types/fitness";
 import { calculateBmr } from "./bmr";
 import { calculateTef } from "./tef";
 import { resolveDailyActiveCalories } from "./activity";
@@ -15,6 +15,7 @@ export function projectBodyComposition(args: {
   calibrationFactor?: number;
   weeks?: number;
   scenario?: ProjectionScenario;
+  calculationOptions?: CalculationOptions;
 }): ProjectionResult {
   const scenario = args.scenario ?? "expected";
   const maxWeeks = Math.min(args.weeks ?? 52, MODEL_CONFIG.projection.maxWeeks);
@@ -28,7 +29,7 @@ export function projectBodyComposition(args: {
 
   for (let week = 0; week <= maxWeeks; week += 1) {
     const profile = { ...args.profile, weightKg, bodyFatPct };
-    const bmr = calculateBmr(profile).hybrid;
+    const bmr = calculateBmr(profile, args.calculationOptions).hybrid;
     const activityScale = weightKg / args.profile.weightKg;
     const scaledActivity: ActivityDefaults = args.activity.mode === "components"
       ? {
@@ -41,11 +42,11 @@ export function projectBodyComposition(args: {
     const calibrationFactor = args.calibrationFactor ?? 1;
     let tdee = (bmr + active) * calibrationFactor;
     let macroPlan = resolveMacroPlan(profile, args.goal, tdee);
-    let tef = calculateTef(macroPlan);
+    let tef = calculateTef(macroPlan, args.calculationOptions);
     for (let iteration = 0; iteration < 3; iteration += 1) {
       tdee = (bmr + active + tef) * calibrationFactor;
       macroPlan = resolveMacroPlan(profile, args.goal, tdee);
-      tef = calculateTef(macroPlan);
+      tef = calculateTef(macroPlan, args.calculationOptions);
     }
     tdee = (bmr + active + tef) * calibrationFactor;
     const calorieTarget = reached && args.goal.onTarget === "maintenance" ? tdee : macroPlan.calories;

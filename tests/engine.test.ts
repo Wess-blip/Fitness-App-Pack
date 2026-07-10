@@ -148,3 +148,50 @@ describe("workout scheduling", () => {
     expect(() => buildPplSchedule([1, 3], 3)).toThrow();
   });
 });
+
+import { DEFAULT_APP_STATE } from "@/data/default-app-state";
+import { resolveAppModel, resolveBodyFatPercent, toActivityDefaults } from "@/lib/app-state/resolve";
+
+describe("modular app input precedence", () => {
+  it("keeps calculated values linked in auto mode", () => {
+    const state = structuredClone(DEFAULT_APP_STATE);
+    state.model.tdeeMode = "auto";
+    state.model.calorieTargetMode = "auto";
+    const first = resolveAppModel(state);
+    state.baseline.currentWeightKg = 90;
+    const second = resolveAppModel(state);
+    expect(second.calculatedTdeeKcal).not.toBe(first.calculatedTdeeKcal);
+    expect(second.effectiveTdeeKcal).toBe(second.calculatedTdeeKcal);
+  });
+
+  it("uses manual TDEE and calorie overrides without changing other derived values", () => {
+    const state = structuredClone(DEFAULT_APP_STATE);
+    const auto = resolveAppModel(state);
+    state.model.tdeeMode = "manual";
+    state.model.manualTdeeKcal = 2800;
+    state.model.calorieTargetMode = "manual";
+    state.model.manualCalorieTargetKcal = 2100;
+    const manual = resolveAppModel(state);
+    expect(manual.effectiveTdeeKcal).toBe(2800);
+    expect(manual.effectiveCalorieTargetKcal).toBe(2100);
+    expect(manual.leanMassKg).toBeCloseTo(auto.leanMassKg, 6);
+    expect(manual.calculatedTdeeKcal).toBeCloseTo(auto.calculatedTdeeKcal, 6);
+  });
+
+  it("falls back safely when Navy measurements are incomplete", () => {
+    const state = structuredClone(DEFAULT_APP_STATE);
+    state.baseline.bodyFatMethod = "navy";
+    state.baseline.waistCm = undefined;
+    state.baseline.assumedBodyFatPct = 31;
+    expect(resolveBodyFatPercent(state)).toBeCloseTo(0.31, 6);
+  });
+
+  it("preserves mutually exclusive wearable activity mode", () => {
+    const state = structuredClone(DEFAULT_APP_STATE);
+    state.activity.mode = "wearable-total";
+    state.activity.wearableActiveKcal = 900;
+    state.activity.treadmill.enabled = true;
+    const result = resolveDailyActiveCalories(state.baseline.currentWeightKg, toActivityDefaults(state));
+    expect(result.activeKcal).toBe(900);
+  });
+});
