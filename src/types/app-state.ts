@@ -3,6 +3,7 @@ import type { ActivityMode, GoalMode, ProjectionScenario, TrainingExperience } f
 export type BodyFatMethod = "navy" | "manual" | "assumed";
 export type ValueMode = "auto" | "manual";
 export type GoalDriver = "body-fat" | "weight";
+export type GoalStopMode = "weight" | "body-fat" | "either" | "both";
 export type WeightUnit = "kg" | "lb";
 export type LengthUnit = "cm" | "in";
 export type SpeedUnit = "kmh" | "mph";
@@ -57,6 +58,7 @@ export interface AppGoalSetup {
   plannedProteinG?: number;
   plannedFatG?: number;
   sessionsPerWeek: number;
+  stopMode: GoalStopMode;
   onTarget: "stop" | "maintenance";
 }
 

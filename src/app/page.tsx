@@ -7,26 +7,22 @@ import { useAppData } from "@/components/app-data-provider";
 import { ExpandablePanel } from "@/components/expandable-panel";
 import { MetricCard } from "@/components/metric-card";
 import { ModelChart } from "@/components/model-chart";
-import { normalizeWeights, resolveAppModel, sevenDayAverages, toActivityDefaults, toBodyProfile, toGoalSettings } from "@/lib/app-state/resolve";
-import { projectBodyComposition } from "@/lib/engine";
+import { resolveAppModel, sevenDayAverages } from "@/lib/app-state/resolve";
+import { buildAppProjections } from "@/lib/app-state/projections";
 import { kgToDisplay, weightUnit } from "@/lib/units";
 
 export default function HomePage() {
   const { state, user } = useAppData();
   const resolved = useMemo(() => resolveAppModel(state), [state]);
   const averages = useMemo(() => sevenDayAverages(state), [state]);
-  const projection = useMemo(() => {
-    const profile = toBodyProfile(state);
-    const baseGoal = toGoalSettings(state);
-    const goal = state.model.calorieTargetMode === "manual" ? { ...baseGoal, caloriePlanMode: "fixed" as const, fixedCalories: resolved.effectiveCalorieTargetKcal } : baseGoal;
-    return projectBodyComposition({ startDate: state.baseline.startDate, profile, goal, activity: toActivityDefaults(state), calibrationFactor: resolved.effectiveTdeeKcal / Math.max(resolved.predictedTdeeKcal, 1), weeks: Math.min(24, state.model.projectionWeeks), scenario: state.model.projectionScenario, calculationOptions: { bmrWeights: normalizeWeights(state.model.bmrWeights), tefFallbackRate: state.model.tefFallbackRate } });
-  }, [resolved, state]);
+  const projectionModel = useMemo(() => buildAppProjections(state, resolved), [resolved, state]);
+  const projection = projectionModel.projections.expected;
   const wUnit = weightUnit(state.profile.unitSystem);
   const showWeight = (kg: number) => kgToDisplay(kg, state.profile.unitSystem);
   const data = projection.points.map((point) => ({ date: point.date, weight: showWeight(point.weightKg), pbf: point.bodyFatPct * 100 }));
-  const last = projection.points.at(-1)!;
-  const target = projection.points.find((point) => point.status !== "active");
-  const targetDate = target ? new Date(`${target.date}T00:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "Beyond current horizon";
+  const last = projectionModel.expectedEndpoint;
+  const target = projectionModel.expectedTarget;
+  const targetDate = target ? new Date(`${target.date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "Beyond current horizon";
   const firstName = state.profile.displayName.split(" ")[0] || user?.user_metadata?.full_name?.split(" ")[0] || "there";
   const balance = resolved.effectiveCalorieTargetKcal - resolved.effectiveTdeeKcal;
 
@@ -41,7 +37,7 @@ export default function HomePage() {
     </section>
 
     <section className="section quick-grid">
-      <Link className="quick-card goal" href="/projection"><Target size={22} /><div><span>Goal path</span><strong>{showWeight(resolved.targetWeightKg).toFixed(1)} {wUnit} · {(resolved.targetBodyFatPct * 100).toFixed(1)}%</strong><small>{targetDate}</small></div><ChevronRight size={18} /></Link>
+      <Link className="quick-card goal" href="/projection"><Target size={22} /><div><span>Expected goal endpoint</span><strong>{showWeight(last.weightKg).toFixed(1)} {wUnit} · {(last.bodyFatPct * 100).toFixed(1)}%</strong><small>{targetDate}</small></div><ChevronRight size={18} /></Link>
       <Link className="quick-card plan" href="/plan"><Activity size={22} /><div><span>Training plan</span><strong>Push · Pull · Legs</strong><small>{state.goals.sessionsPerWeek} sessions per week</small></div><ChevronRight size={18} /></Link>
     </section>
 
