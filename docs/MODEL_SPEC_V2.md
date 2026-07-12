@@ -16,6 +16,8 @@ The user selects one source:
 
 Lean mass = weight x (1 - body-fat fraction).
 
+Lean mass is not synonymous with skeletal muscle. It also includes body water, glycogen, organs, bone and other fat-free tissue; projection output must be labelled accordingly.
+
 ## Linked goals
 
 The user selects a single goal driver.
