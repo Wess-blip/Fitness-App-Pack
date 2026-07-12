@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { User } from "@supabase/supabase-js";
 import { DEFAULT_APP_STATE } from "@/data/default-app-state";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { fieldUnitsFromSystem } from "@/lib/units";
 import type { AppState } from "@/types/app-state";
 
 const LOCAL_KEY = "formlab-app-state-v1.2";
@@ -24,11 +25,16 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 function mergeState(input: Partial<AppState> | null | undefined): AppState {
   if (!input) return DEFAULT_APP_STATE;
+  const legacyUnits = input.profile?.unitSystem ?? DEFAULT_APP_STATE.profile.unitSystem;
   return {
     ...DEFAULT_APP_STATE,
     ...input,
-    schemaVersion: 3,
-    profile: { ...DEFAULT_APP_STATE.profile, ...input.profile },
+    schemaVersion: 4,
+    profile: {
+      ...DEFAULT_APP_STATE.profile,
+      ...input.profile,
+      fieldUnits: { ...fieldUnitsFromSystem(legacyUnits), ...input.profile?.fieldUnits },
+    },
     baseline: { ...DEFAULT_APP_STATE.baseline, ...input.baseline },
     goals: { ...DEFAULT_APP_STATE.goals, ...input.goals },
     activity: {

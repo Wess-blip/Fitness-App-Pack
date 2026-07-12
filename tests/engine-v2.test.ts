@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_APP_STATE } from "@/data/default-app-state";
 import { calibrateRollingTdee, calculateTreadmill, projectBodyComposition } from "@/lib/engine";
 import { resolveGoalTargets } from "@/lib/app-state/resolve";
-import { cmToDisplay, displayToCm, displayToKg, kgToDisplay } from "@/lib/units";
+import { cmToDisplay, cmToUnit, displayToCm, displayToKg, fieldUnitsFromSystem, formatInputNumber, kgToDisplay, kgToUnit, kmhToUnit, unitToCm, unitToKg, unitToKmh } from "@/lib/units";
 import { demoActivity, demoGoal, demoProfile } from "@/data/demo";
 import type { RegressionDay } from "@/types/fitness";
 
@@ -40,6 +40,25 @@ describe("linked goal mathematics", () => {
 describe("unit conversions", () => {
   it("round-trips kg and pounds", () => expect(displayToKg(kgToDisplay(83.4, "imperial"), "imperial")).toBeCloseTo(83.4, 10));
   it("round-trips centimetres and inches", () => expect(displayToCm(cmToDisplay(184.3, "imperial"), "imperial")).toBeCloseTo(184.3, 10));
+  it("round-trips each independently selected field unit", () => {
+    expect(unitToKg(kgToUnit(83.4, "lb"), "lb")).toBeCloseTo(83.4, 10);
+    expect(unitToCm(cmToUnit(39.624, "in"), "in")).toBeCloseTo(39.624, 10);
+    expect(unitToKmh(kmhToUnit(8.5, "mph"), "mph")).toBeCloseTo(8.5, 10);
+  });
+  it("removes floating-point tails from editable values", () => {
+    expect(formatInputNumber(15.600000000000001)).toBe("15.6");
+    expect(formatInputNumber(216.10000000000002)).toBe("216.1");
+  });
+  it("keeps independent field choices in the saved state", () => {
+    const state = structuredClone(DEFAULT_APP_STATE);
+    state.profile.fieldUnits.waist = "in";
+    state.profile.fieldUnits.neck = "cm";
+    state.profile.fieldUnits.bodyWeight = "lb";
+    expect(state.profile.fieldUnits).toMatchObject({ waist: "in", neck: "cm", bodyWeight: "lb" });
+  });
+  it("migrates the previous universal imperial preference without changing display units", () => {
+    expect(fieldUnitsFromSystem("imperial")).toMatchObject({ height: "in", bodyWeight: "lb", waist: "in", treadmillSpeed: "mph" });
+  });
 });
 
 describe("projection physics and dates", () => {

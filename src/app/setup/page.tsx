@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { Activity, Calculator, CheckCircle2, Ruler, Save, Target, UserRound } from "lucide-react";
 import { useAppData } from "@/components/app-data-provider";
 import { OverrideField } from "@/components/override-field";
+import { UnitNumberInput } from "@/components/unit-number-input";
 import { resolveAppModel } from "@/lib/app-state/resolve";
-import { cmToDisplay, displayToCm, displayToKg, kgToDisplay, lengthUnit, weightUnit } from "@/lib/units";
+import { kgToUnit, unitToKg } from "@/lib/units";
+import type { AppFieldUnits } from "@/types/app-state";
 
 const tabs = [
   { id: "about", label: "About you", Icon: UserRound },
@@ -21,11 +23,13 @@ export default function SetupPage() {
   const { state, setState, patch, syncStatus, user } = useAppData();
   const [tab, setTab] = useState<Tab>("about");
   const resolved = useMemo(() => resolveAppModel(state), [state]);
-  const units = state.profile.unitSystem;
-  const wUnit = weightUnit(units);
-  const lUnit = lengthUnit(units);
-  const weight = (kg: number) => kgToDisplay(kg, units);
-  const length = (cm?: number) => cm === undefined ? "" : cmToDisplay(cm, units);
+  const fieldUnits = state.profile.fieldUnits;
+  const wUnit = fieldUnits.bodyWeight;
+  const weight = (kg: number) => kgToUnit(kg, wUnit);
+  const setFieldUnit = <K extends keyof AppFieldUnits>(field: K, unit: AppFieldUnits[K]) => patch("profile", {
+    fieldUnits: { ...fieldUnits, [field]: unit },
+    ...(field === "bodyWeight" ? { unitSystem: unit === "lb" ? "imperial" as const : "metric" as const } : {}),
+  });
   const setActivity = (value: Partial<typeof state.activity>) => setState((current) => ({ ...current, activity: { ...current.activity, ...value }, updatedAt: new Date().toISOString() }));
   const setTreadmill = (value: Partial<typeof state.activity.treadmill>) => setState((current) => ({ ...current, activity: { ...current.activity, treadmill: { ...current.activity.treadmill, ...value } }, updatedAt: new Date().toISOString() }));
   const setModel = (value: Partial<typeof state.model>) => setState((current) => ({ ...current, model: { ...current.model, ...value }, updatedAt: new Date().toISOString() }));
@@ -43,10 +47,10 @@ export default function SetupPage() {
         <div className="section-title"><div><div className="eyebrow">Step 1</div><h2>About you</h2></div><span className="pill">Set once</span></div>
         <div className="form-grid two-col">
           <div className="field"><label>Name</label><input value={state.profile.displayName} placeholder="Your name" onChange={(e) => patch("profile", { displayName: e.target.value })} /></div>
-          <div className="field"><label>Measurement units</label><select value={units} onChange={(e) => patch("profile", { unitSystem: e.target.value as typeof units })}><option value="metric">Metric (kg, cm)</option><option value="imperial">Imperial (lb, in)</option></select><small>Changing units changes display only, not your saved values.</small></div>
+          <div className="notice"><strong>Units are chosen per field.</strong><br /><small>Every selector changes display and entry only. Calculations continue using one canonical value.</small></div>
           <div className="field"><label>Date of birth</label><input type="date" value={state.profile.birthDate} onChange={(e) => patch("profile", { birthDate: e.target.value })} /></div>
           <div className="field"><label>Sex used by formulas</label><select value={state.profile.sex} onChange={(e) => patch("profile", { sex: e.target.value as "male" | "female" })}><option value="male">Male</option><option value="female">Female</option></select></div>
-          <div className="field"><label>Height</label><div className="input-with-unit"><input type="number" step="0.1" value={Number(length(state.profile.heightCm)).toFixed(1)} onChange={(e) => patch("profile", { heightCm: displayToCm(numeric(e.target.value), units) })} /><span>{lUnit}</span></div></div>
+          <div className="field"><label>Height</label><UnitNumberInput label="Height" kind="length" value={state.profile.heightCm} unit={fieldUnits.height} onValue={(heightCm) => patch("profile", { heightCm })} onUnit={(unit) => setFieldUnit("height", unit as AppFieldUnits["height"])} /></div>
           <div className="field"><label>Training experience</label><select value={state.profile.trainingExperience} onChange={(e) => patch("profile", { trainingExperience: e.target.value as typeof state.profile.trainingExperience })}><option value="novice">New / returning</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
         </div>
         <button className="button accent step-next" onClick={() => setTab("baseline")}>Next: current data</button>
@@ -58,15 +62,15 @@ export default function SetupPage() {
         <div className="section-title"><div><div className="eyebrow">Step 2</div><h2>Current body data</h2></div><span className="pill">Update anytime</span></div>
         <div className="form-grid two-col">
           <div className="field"><label>Projection start date</label><input type="date" value={state.baseline.startDate} onChange={(e) => patch("baseline", { startDate: e.target.value })} /></div>
-          <div className="field"><label>Current weight</label><div className="input-with-unit"><input type="number" step="0.1" value={weight(state.baseline.currentWeightKg).toFixed(1)} onChange={(e) => patch("baseline", { currentWeightKg: displayToKg(numeric(e.target.value), units) })} /><span>{wUnit}</span></div></div>
+          <div className="field"><label>Current weight</label><UnitNumberInput label="Current weight" kind="weight" value={state.baseline.currentWeightKg} unit={fieldUnits.bodyWeight} onValue={(currentWeightKg) => patch("baseline", { currentWeightKg })} onUnit={(unit) => setFieldUnit("bodyWeight", unit as AppFieldUnits["bodyWeight"])} /></div>
           <div className="field"><label>How should body fat be set?</label><select value={state.baseline.bodyFatMethod} onChange={(e) => patch("baseline", { bodyFatMethod: e.target.value as typeof state.baseline.bodyFatMethod })}><option value="manual">Measured / manual percentage</option><option value="navy">Calculate from circumferences</option><option value="assumed">Use a planning estimate</option></select></div>
           <div className="field"><label>How reliable is it?</label><select value={state.baseline.bodyFatConfidence} onChange={(e) => patch("baseline", { bodyFatConfidence: e.target.value as typeof state.baseline.bodyFatConfidence })}><option value="none">Unknown</option><option value="low">Rough estimate</option><option value="medium">Consistent home method</option><option value="high">Professional measurement</option></select></div>
           {state.baseline.bodyFatMethod === "manual" && <div className="field"><label>Body fat</label><div className="input-with-unit"><input type="number" min="3" max="65" step="0.1" value={state.baseline.manualBodyFatPct ?? ""} onChange={(e) => patch("baseline", { manualBodyFatPct: numeric(e.target.value) })} /><span>%</span></div></div>}
           {state.baseline.bodyFatMethod === "assumed" && <div className="field"><label>Planning estimate</label><div className="input-with-unit"><input type="number" min="3" max="65" step="0.1" value={state.baseline.assumedBodyFatPct} onChange={(e) => patch("baseline", { assumedBodyFatPct: numeric(e.target.value) })} /><span>%</span></div></div>}
           {state.baseline.bodyFatMethod === "navy" && <>
-            <div className="field"><label>Waist / abdomen</label><div className="input-with-unit"><input type="number" step="0.1" value={length(state.baseline.waistCm)} onChange={(e) => patch("baseline", { waistCm: displayToCm(numeric(e.target.value), units) })} /><span>{lUnit}</span></div></div>
-            <div className="field"><label>Neck</label><div className="input-with-unit"><input type="number" step="0.1" value={length(state.baseline.neckCm)} onChange={(e) => patch("baseline", { neckCm: displayToCm(numeric(e.target.value), units) })} /><span>{lUnit}</span></div></div>
-            {state.profile.sex === "female" && <div className="field"><label>Hips</label><div className="input-with-unit"><input type="number" step="0.1" value={length(state.baseline.hipCm)} onChange={(e) => patch("baseline", { hipCm: displayToCm(numeric(e.target.value), units) })} /><span>{lUnit}</span></div></div>}
+            <div className="field"><label>Waist / abdomen</label><UnitNumberInput label="Waist or abdomen" kind="length" value={state.baseline.waistCm} unit={fieldUnits.waist} onValue={(waistCm) => patch("baseline", { waistCm })} onUnit={(unit) => setFieldUnit("waist", unit as AppFieldUnits["waist"])} /></div>
+            <div className="field"><label>Neck</label><UnitNumberInput label="Neck" kind="length" value={state.baseline.neckCm} unit={fieldUnits.neck} onValue={(neckCm) => patch("baseline", { neckCm })} onUnit={(unit) => setFieldUnit("neck", unit as AppFieldUnits["neck"])} /></div>
+            {state.profile.sex === "female" && <div className="field"><label>Hips</label><UnitNumberInput label="Hips" kind="length" value={state.baseline.hipCm} unit={fieldUnits.hips} onValue={(hipCm) => patch("baseline", { hipCm })} onUnit={(unit) => setFieldUnit("hips", unit as AppFieldUnits["hips"])} /></div>}
           </>}
         </div>
         <div className="derived-strip"><div><span>Resolved body fat</span><strong>{(resolved.bodyFatPct * 100).toFixed(1)}%</strong></div><div><span>Lean mass</span><strong>{weight(resolved.leanMassKg).toFixed(1)} {wUnit}</strong></div><div><span>Fat mass</span><strong>{weight(resolved.fatMassKg).toFixed(1)} {wUnit}</strong></div></div>
@@ -80,18 +84,18 @@ export default function SetupPage() {
         <div className="form-grid two-col">
           <div className="field"><label>Goal type</label><select value={state.goals.mode} onChange={(e) => patch("goals", { mode: e.target.value as typeof state.goals.mode })}><option value="lose">Lose fat / weight</option><option value="maintain">Maintain</option><option value="gain">Gain muscle / weight</option><option value="recomp">Recomposition</option></select></div>
           <div className="field"><label>Primary target</label><select value={state.goals.goalDriver} onChange={(e) => patch("goals", { goalDriver: e.target.value as typeof state.goals.goalDriver })}><option value="body-fat">Body-fat percentage</option><option value="weight">Target weight</option></select></div>
-          {state.goals.goalDriver === "body-fat" ? <div className="field"><label>Target body fat</label><div className="input-with-unit"><input type="number" min="3" max="65" step="0.1" value={state.goals.targetBodyFatPct ?? ""} onChange={(e) => patch("goals", { targetBodyFatPct: numeric(e.target.value) })} /><span>%</span></div></div> : <div className="field"><label>Target weight</label><div className="input-with-unit"><input type="number" step="0.1" value={weight(state.goals.targetWeightKg ?? resolved.targetWeightKg).toFixed(1)} onChange={(e) => patch("goals", { targetWeightKg: displayToKg(numeric(e.target.value), units) })} /><span>{wUnit}</span></div></div>}
+          {state.goals.goalDriver === "body-fat" ? <div className="field"><label>Target body fat</label><div className="input-with-unit"><input type="number" min="3" max="65" step="0.1" value={state.goals.targetBodyFatPct ?? ""} onChange={(e) => patch("goals", { targetBodyFatPct: numeric(e.target.value) })} /><span>%</span></div></div> : <div className="field"><label>Target weight</label><UnitNumberInput label="Target weight" kind="weight" value={state.goals.targetWeightKg ?? resolved.targetWeightKg} unit={fieldUnits.targetWeight} onValue={(targetWeightKg) => patch("goals", { targetWeightKg })} onUnit={(unit) => setFieldUnit("targetWeight", unit as AppFieldUnits["targetWeight"])} /></div>}
           <div className="field"><label>Weekly pace</label><div className="input-with-unit"><input type="number" min="0" max="2" step="0.05" value={state.goals.targetWeeklyRatePct} onChange={(e) => patch("goals", { targetWeeklyRatePct: numeric(e.target.value) })} /><span>% body weight</span></div><small>The engine applies safety limits if this is too aggressive.</small></div>
         </div>
 
         <div className="linked-goal-card">
-          <div><span className="auto-chip">AUTO</span><small>Linked target weight</small><strong>{weight(resolved.targetWeightKg).toFixed(1)} {wUnit}</strong></div>
+          <div><span className="auto-chip">AUTO</span><small>Linked target weight</small><strong>{kgToUnit(resolved.targetWeightKg, fieldUnits.targetWeight).toFixed(1)} {fieldUnits.targetWeight}</strong></div>
           <div className="link-symbol">â‡„</div>
           <div><span className="auto-chip">AUTO</span><small>Linked body fat</small><strong>{(resolved.targetBodyFatPct * 100).toFixed(1)}%</strong></div>
         </div>
         <p className="small muted">The inactive target is derived from target lean mass. For example, 50 kg lean mass at 15% body fat equals 58.8 kg target weight; 50 kg lean mass at 60 kg equals 16.7% body fat.</p>
 
-        <OverrideField label="Target lean mass assumption" mode={state.goals.targetLeanMassMode} autoValue={weight(resolved.leanMassKg)} manualValue={state.goals.manualTargetLeanMassKg === undefined ? undefined : weight(state.goals.manualTargetLeanMassKg)} unit={wUnit} min={20} max={300} step={0.1} onMode={(mode) => patch("goals", { targetLeanMassMode: mode })} onValue={(value) => patch("goals", { manualTargetLeanMassKg: displayToKg(value, units) })} />
+        <OverrideField label="Target lean mass assumption" mode={state.goals.targetLeanMassMode} autoValue={kgToUnit(resolved.leanMassKg, fieldUnits.targetLeanMass)} manualValue={state.goals.manualTargetLeanMassKg === undefined ? undefined : kgToUnit(state.goals.manualTargetLeanMassKg, fieldUnits.targetLeanMass)} unit={fieldUnits.targetLeanMass} unitOptions={[{ value: "kg", label: "kg" }, { value: "lb", label: "lb" }]} onUnit={(unit) => setFieldUnit("targetLeanMass", unit as AppFieldUnits["targetLeanMass"])} min={20} max={500} step={0.1} onMode={(mode) => patch("goals", { targetLeanMassMode: mode })} onValue={(value) => patch("goals", { manualTargetLeanMassKg: unitToKg(value, fieldUnits.targetLeanMass) })} />
 
         <div className="form-grid two-col section">
           <div className="field"><label>Calories</label><select value={state.goals.caloriePlanMode} onChange={(e) => patch("goals", { caloriePlanMode: e.target.value as typeof state.goals.caloriePlanMode })}><option value="goal-driven">Auto from TDEE and pace</option><option value="fixed">Fixed daily amount</option></select></div>
@@ -129,7 +133,7 @@ export default function SetupPage() {
         <section className="card treadmill-card">
           <div className="row"><div><div className="eyebrow">Optional module</div><h2>Treadmill</h2></div><label className="switch"><input type="checkbox" checked={state.activity.treadmill.enabled} onChange={(e) => setTreadmill({ enabled: e.target.checked })} /><span /></label></div>
           {state.activity.treadmill.enabled ? <div className="form-grid two-col section">
-            <div className="field"><label>Speed</label><div className="input-with-unit"><input type="number" step="0.1" value={state.activity.treadmill.speedKmh} onChange={(e) => setTreadmill({ speedKmh: numeric(e.target.value) })} /><span>km/h</span></div></div>
+            <div className="field"><label>Speed</label><UnitNumberInput label="Treadmill speed" kind="speed" value={state.activity.treadmill.speedKmh} unit={fieldUnits.treadmillSpeed} onValue={(speedKmh) => setTreadmill({ speedKmh })} onUnit={(unit) => setFieldUnit("treadmillSpeed", unit as AppFieldUnits["treadmillSpeed"])} /></div>
             <div className="field"><label>Incline</label><div className="input-with-unit"><input type="number" step="0.5" value={state.activity.treadmill.inclinePct} onChange={(e) => setTreadmill({ inclinePct: numeric(e.target.value) })} /><span>%</span></div></div>
             <div className="field"><label>Plan by</label><select value={state.activity.treadmill.inputMode} onChange={(e) => setTreadmill({ inputMode: e.target.value as "duration" | "target" })}><option value="duration">Duration</option><option value="target">Active calories</option></select></div>
             {state.activity.treadmill.inputMode === "duration" ? <div className="field"><label>Duration</label><div className="input-with-unit"><input type="number" value={state.activity.treadmill.durationMin ?? ""} onChange={(e) => setTreadmill({ durationMin: numeric(e.target.value) })} /><span>min</span></div></div> : <div className="field"><label>Active-calorie target</label><div className="input-with-unit"><input type="number" value={state.activity.treadmill.targetActiveKcal ?? ""} onChange={(e) => setTreadmill({ targetActiveKcal: numeric(e.target.value) })} /><span>kcal</span></div></div>}

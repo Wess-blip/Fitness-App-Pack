@@ -3,6 +3,22 @@ import type { ActivityMode, GoalMode, ProjectionScenario, TrainingExperience } f
 export type BodyFatMethod = "navy" | "manual" | "assumed";
 export type ValueMode = "auto" | "manual";
 export type GoalDriver = "body-fat" | "weight";
+export type WeightUnit = "kg" | "lb";
+export type LengthUnit = "cm" | "in";
+export type SpeedUnit = "kmh" | "mph";
+
+export interface AppFieldUnits {
+  height: LengthUnit;
+  bodyWeight: WeightUnit;
+  waist: LengthUnit;
+  neck: LengthUnit;
+  hips: LengthUnit;
+  targetWeight: WeightUnit;
+  targetLeanMass: WeightUnit;
+  logWeight: WeightUnit;
+  logMeasurement: LengthUnit;
+  treadmillSpeed: SpeedUnit;
+}
 
 export interface AppStaticProfile {
   displayName: string;
@@ -11,7 +27,9 @@ export interface AppStaticProfile {
   heightCm: number;
   trainingExperience: TrainingExperience;
   timezone: string;
+  /** Legacy chart/display preference. Input fields use fieldUnits independently. */
   unitSystem: "metric" | "imperial";
+  fieldUnits: AppFieldUnits;
 }
 
 export interface AppDynamicBaseline {
@@ -96,7 +114,7 @@ export interface AppLogEntry {
 }
 
 export interface AppState {
-  schemaVersion: 3;
+  schemaVersion: 4;
   profile: AppStaticProfile;
   baseline: AppDynamicBaseline;
   goals: AppGoalSetup;

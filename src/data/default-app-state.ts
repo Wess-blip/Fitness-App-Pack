@@ -1,7 +1,7 @@
 import type { AppState } from "@/types/app-state";
 
 export const DEFAULT_APP_STATE: AppState = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   profile: {
     displayName: "",
     birthDate: "1990-01-01",
@@ -10,6 +10,18 @@ export const DEFAULT_APP_STATE: AppState = {
     trainingExperience: "novice",
     timezone: "Asia/Singapore",
     unitSystem: "metric",
+    fieldUnits: {
+      height: "cm",
+      bodyWeight: "kg",
+      waist: "cm",
+      neck: "cm",
+      hips: "cm",
+      targetWeight: "kg",
+      targetLeanMass: "kg",
+      logWeight: "kg",
+      logMeasurement: "cm",
+      treadmillSpeed: "kmh",
+    },
   },
   baseline: {
     startDate: new Date().toISOString().slice(0, 10),
