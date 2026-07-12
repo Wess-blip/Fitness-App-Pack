@@ -3,17 +3,18 @@
 import { useMemo, useState } from "react";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useAppData } from "@/components/app-data-provider";
+import { UnitNumberInput } from "@/components/unit-number-input";
 import { ACTIVITY_CATALOG } from "@/data/activity-catalog";
 import { activeCaloriesFromMet } from "@/lib/engine";
-import { displayToCm, displayToKg, kgToDisplay, cmToDisplay, lengthUnit, weightUnit } from "@/lib/units";
-import type { AppLogEntry } from "@/types/app-state";
+import { cmToUnit, kgToUnit } from "@/lib/units";
+import type { AppFieldUnits, AppLogEntry } from "@/types/app-state";
 
 type LogType = "Food" | "Weight" | "Activity" | "Measurement";
 const types: LogType[] = ["Food", "Weight", "Measurement", "Activity"];
 const number = (value: string) => Number.isFinite(Number(value)) ? Number(value) : 0;
 
 export default function LogPage() {
-  const { state, setState, syncStatus } = useAppData();
+  const { state, setState, patch, syncStatus } = useAppData();
   const [type, setType] = useState<LogType>("Food");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [value, setValue] = useState("");
@@ -26,9 +27,10 @@ export default function LogPage() {
   const [activityId, setActivityId] = useState(ACTIVITY_CATALOG[0].id);
   const [duration, setDuration] = useState("45");
   const [activityMode, setActivityMode] = useState<"auto" | "manual">("auto");
-  const units = state.profile.unitSystem;
-  const wUnit = weightUnit(units);
-  const lUnit = lengthUnit(units);
+  const fieldUnits = state.profile.fieldUnits;
+  const wUnit = fieldUnits.logWeight;
+  const lUnit = fieldUnits.logMeasurement;
+  const setFieldUnit = <K extends keyof AppFieldUnits>(field: K, unit: AppFieldUnits[K]) => patch("profile", { fieldUnits: { ...fieldUnits, [field]: unit } });
   const activity = ACTIVITY_CATALOG.find((item) => item.id === activityId) ?? ACTIVITY_CATALOG[0];
   const autoActivityKcal = activeCaloriesFromMet(state.baseline.currentWeightKg, number(duration), activity.met);
   const displayedActivityKcal = activityMode === "manual" ? number(value) : autoActivityKcal;
@@ -43,13 +45,13 @@ export default function LogPage() {
     }
     if (type === "Weight") {
       if (number(value) <= 0) return;
-      const kg = displayToKg(number(value), units);
-      entry = { id: crypto.randomUUID(), type, title: "Morning weight", numericValue: kg, valueText: `${kgToDisplay(kg, units).toFixed(1)} ${wUnit}`, date };
+      const kg = number(value);
+      entry = { id: crypto.randomUUID(), type, title: "Morning weight", numericValue: kg, valueText: `${kgToUnit(kg, wUnit).toFixed(1)} ${wUnit}`, date };
     }
     if (type === "Measurement") {
       if (number(value) <= 0) return;
-      const cm = displayToCm(number(value), units);
-      entry = { id: crypto.randomUUID(), type, title: measurement[0].toUpperCase() + measurement.slice(1), numericValue: cm, valueText: `${cmToDisplay(cm, units).toFixed(1)} ${lUnit}`, date, metadata: { measurement } };
+      const cm = number(value);
+      entry = { id: crypto.randomUUID(), type, title: measurement[0].toUpperCase() + measurement.slice(1), numericValue: cm, valueText: `${cmToUnit(cm, lUnit).toFixed(1)} ${lUnit}`, date, metadata: { measurement } };
     }
     if (type === "Activity") {
       if (number(duration) <= 0 || displayedActivityKcal <= 0) return;
@@ -90,11 +92,11 @@ export default function LogPage() {
         <div className="notice full-span">Food-photo AI is not included, so there is no OpenAI usage charge. Enter the label calories or your best estimate.</div>
       </div>}
 
-      {type === "Weight" && <div className="fast-entry"><div><div className="eyebrow">Morning weight</div><h2>No description needed</h2><p className="small">Saving this also updates your current baseline weight.</p></div><div className="field"><label>Weight</label><div className="input-with-unit"><input autoFocus type="number" step="0.1" value={value} onChange={(e) => setValue(e.target.value)} /><span>{wUnit}</span></div></div></div>}
+      {type === "Weight" && <div className="fast-entry"><div><div className="eyebrow">Morning weight</div><h2>No description needed</h2><p className="small">Saving this also updates your current baseline weight.</p></div><div className="field"><label>Weight</label><UnitNumberInput label="Logged weight" kind="weight" value={value === "" ? undefined : number(value)} unit={wUnit} onValue={(kg) => setValue(String(kg))} onUnit={(unit) => setFieldUnit("logWeight", unit as AppFieldUnits["logWeight"])} /></div></div>}
 
       {type === "Measurement" && <div className="form-grid two-col">
         <div className="field"><label>Measurement</label><select value={measurement} onChange={(e) => setMeasurement(e.target.value as typeof measurement)}>{measurementOptions.map((item) => <option key={item} value={item}>{item[0].toUpperCase() + item.slice(1)}</option>)}</select></div>
-        <div className="field"><label>Value</label><div className="input-with-unit"><input type="number" step="0.1" value={value} onChange={(e) => setValue(e.target.value)} /><span>{lUnit}</span></div></div>
+        <div className="field"><label>Value</label><UnitNumberInput label={`${measurement} measurement`} kind="length" value={value === "" ? undefined : number(value)} unit={lUnit} onValue={(cm) => setValue(String(cm))} onUnit={(unit) => setFieldUnit("logMeasurement", unit as AppFieldUnits["logMeasurement"])} /></div>
         <div className="notice full-span">The list automatically shows waist and neck for males, and adds hips for females.</div>
       </div>}
 
