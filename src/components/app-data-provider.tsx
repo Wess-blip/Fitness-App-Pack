@@ -27,7 +27,7 @@ function mergeState(input: Partial<AppState> | null | undefined): AppState {
   return {
     ...DEFAULT_APP_STATE,
     ...input,
-    schemaVersion: 2,
+    schemaVersion: 3,
     profile: { ...DEFAULT_APP_STATE.profile, ...input.profile },
     baseline: { ...DEFAULT_APP_STATE.baseline, ...input.baseline },
     goals: { ...DEFAULT_APP_STATE.goals, ...input.goals },

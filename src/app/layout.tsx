@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   applicationName: "FormLab Fitness",
   manifest: "/manifest.webmanifest",
 };
-export const viewport: Viewport = { themeColor: "#0b1f3a", width: "device-width", initialScale: 1, viewportFit: "cover" };
+export const viewport: Viewport = { themeColor: "#0d5c63", width: "device-width", initialScale: 1, viewportFit: "cover" };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="en"><body><PwaRegister /><AppDataProvider><AppShell>{children}</AppShell></AppDataProvider></body></html>;
 }

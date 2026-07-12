@@ -1,18 +1,11 @@
-# Updating your existing GitHub-linked app
+# Wess Fitness v1.3 - what to do first
 
-You do **not** need to create a new Netlify site.
+The update is already implemented in this repository and the linked Supabase security migrations are already applied.
 
-## Beginner-friendly method
+1. Read `docs/V1_3_UPDATE_GUIDE.md`.
+2. Test the app locally if desired with `npm ci`, then `npm test` and `npm run build`.
+3. Commit and push the tested files to the GitHub branch linked to Netlify.
+4. Wait for the Netlify deploy to show **Published**.
+5. Open `https://wessfitness.netlify.app/login` in a private window and complete one Google sign-in.
 
-1. Download and unzip this pack.
-2. Install and open GitHub Desktop.
-3. In GitHub Desktop, clone/open the private repository already linked to Netlify.
-4. Open the cloned repository folder on your computer.
-5. Copy **all files and folders inside this pack** into that repository folder.
-6. When Windows asks, choose **Replace the files in the destination**.
-7. In GitHub Desktop, enter the summary: `Upgrade FormLab to v1.2`.
-8. Click **Commit to main**.
-9. Click **Push origin**.
-10. Open Netlify > Deploys. A new deploy should start automatically.
-
-Before Google login works, complete `docs/V1_2_UPGRADE.md`, including the Supabase migration and OAuth settings.
+Do not add an OpenAI key. Food-photo AI was deliberately removed to avoid usage charges.

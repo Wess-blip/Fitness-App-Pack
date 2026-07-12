@@ -2,6 +2,7 @@ import type { ActivityMode, GoalMode, ProjectionScenario, TrainingExperience } f
 
 export type BodyFatMethod = "navy" | "manual" | "assumed";
 export type ValueMode = "auto" | "manual";
+export type GoalDriver = "body-fat" | "weight";
 
 export interface AppStaticProfile {
   displayName: string;
@@ -27,6 +28,9 @@ export interface AppDynamicBaseline {
 
 export interface AppGoalSetup {
   mode: GoalMode;
+  goalDriver: GoalDriver;
+  targetLeanMassMode: ValueMode;
+  manualTargetLeanMassKg?: number;
   targetWeightKg?: number;
   targetBodyFatPct?: number;
   targetWeeklyRatePct: number;
@@ -92,7 +96,7 @@ export interface AppLogEntry {
 }
 
 export interface AppState {
-  schemaVersion: 2;
+  schemaVersion: 3;
   profile: AppStaticProfile;
   baseline: AppDynamicBaseline;
   goals: AppGoalSetup;
@@ -108,13 +112,30 @@ export interface ResolvedAppModel {
   bodyFatPct: number;
   leanMassKg: number;
   fatMassKg: number;
+  predictedTdeeKcal: number;
   calculatedTdeeKcal: number;
   effectiveTdeeKcal: number;
   calculatedCalorieTargetKcal: number;
   effectiveCalorieTargetKcal: number;
   activeKcal: number;
   gymBurnKcal: number;
-  treadmillMinutes: number;
+  treadmillMinutes: number | null;
+  targetLeanMassKg: number;
+  targetWeightKg: number;
+  targetBodyFatPct: number;
+  goalDriver: GoalDriver;
+  calibration: {
+    status: "learning" | "preview" | "applied";
+    confidence: "low" | "medium" | "high";
+    confidenceScore: number;
+    calendarDays: number;
+    weightPoints: number;
+    intakeCoverage: number;
+    appliedFactor: number;
+    likelyLowKcal: number;
+    likelyHighKcal: number;
+    warnings: string[];
+  };
   tdeeSource: "calculated" | "manual";
   calorieSource: "calculated" | "manual";
 }

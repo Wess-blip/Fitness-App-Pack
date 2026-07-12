@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Home, LineChart, NotebookPen, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, Home, LineChart, NotebookPen, TrendingUp } from "lucide-react";
 
 const items = [
-  { href: "/", label: "Home", Icon: Home },
-  { href: "/setup", label: "Setup", Icon: SlidersHorizontal },
-  { href: "/plan", label: "Plan", Icon: CalendarDays },
+  { href: "/", label: "Today", Icon: Home },
   { href: "/projection", label: "Projection", Icon: LineChart },
   { href: "/log", label: "Log", Icon: NotebookPen },
+  { href: "/plan", label: "Plan", Icon: CalendarDays },
+  { href: "/progress", label: "Progress", Icon: TrendingUp },
 ];
 export function BottomNav() {
   const pathname = usePathname();

@@ -16,7 +16,8 @@ export async function GET(request: Request) {
         setAll: (items) => items.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
       },
     });
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) return NextResponse.redirect(`${origin}/login?error=oauth_callback`);
   }
   return NextResponse.redirect(`${origin}/setup`);
 }

@@ -4,11 +4,11 @@
 
 1. Install GitHub Desktop and sign in.
 2. Clone your private FormLab repository to your computer.
-3. Open the downloaded FormLab v1.2 ZIP.
-4. Copy the files **inside** the v1.2 folder into the cloned repository folder.
+3. Open the downloaded FormLab v1.3 ZIP.
+4. Copy the files **inside** the v1.3 folder into the cloned repository folder.
 5. Choose **Replace files** when Windows asks.
 6. Return to GitHub Desktop. It will list the changed files.
-7. In the bottom-left Summary box, type: `Upgrade FormLab to v1.2`.
+7. In the bottom-left Summary box, type: `Upgrade FormLab to v1.3`.
 8. Click **Commit to main**.
 9. Click **Push origin**.
 10. Netlify detects the push, builds the app and publishes it automatically.
@@ -22,7 +22,7 @@
 ## Safe testing with a branch
 
 1. In GitHub Desktop choose Current branch > New branch.
-2. Name it `v1-2-test`.
+2. Name it `v1-3-test`.
 3. Make or copy changes, commit and push.
 4. Netlify can create a Deploy Preview without changing production.
 5. Merge the branch into `main` only after testing.
@@ -32,7 +32,7 @@
 ```bash
 git pull origin main
 git add .
-git commit -m "Upgrade FormLab to v1.2"
+git commit -m "Upgrade FormLab to v1.3"
 git push origin main
 ```
 

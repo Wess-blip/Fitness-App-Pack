@@ -1,21 +1,21 @@
-FormLab Fitness v1.2
+FormLab Fitness v1.3
 
 Core additions:
-- Setup: profile, dynamic baseline, goals, activity and advanced model settings
-- Google login and Supabase cloud state sync
-- Local-first persistence
-- Dashboard Pro-style Projection module
-- Expandable charts and tables
-- Expanded Progress module
-- Saved user-specific PPL schedule
-- Manual/automatic TDEE and calorie precedence
-- Optional treadmill integration
-- 002_user_app_state_and_auth.sql migration
-- Beginner GitHub/Netlify guide
+- Metric and imperial units
+- Linked body-fat and weight targets
+- Auto/manual target lean mass, TDEE and calorie controls
+- Simplified sport, weight, measurement and food logs
+- Exact-date daily projection with uncertainty scenarios
+- Energy-conserving fat and lean mass model
+- Guarded 14-day preview / 21-day rolling regression
+- Updated Today, Projection, Log and Progress interfaces
+- Supabase security hardening migrations
+- Paid OpenAI food-photo route and dependency removed
+- Personal defaults and demo logs removed
 
-Validation:
-- TypeScript passed
-- ESLint passed
-- 21/21 tests passed
-- Next.js production build passed
-- Six production routes returned HTTP 200
+Validation target:
+- TypeScript
+- ESLint
+- 31 calculation tests
+- Next.js production build
+- Local route and live deploy smoke tests

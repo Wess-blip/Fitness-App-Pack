@@ -48,12 +48,14 @@ export function calculateTreadmill(
 
   if (module.targetActiveKcal !== undefined && module.targetActiveKcal > 0) {
     const target = module.targetActiveKcal;
-    const mainMinutes = Math.max(0, (target - rampKcal) / Math.max(activeKcalPerMin, 0.01));
-    durationMin = rampMin + mainMinutes;
+    durationMin = target <= rampKcal && rampKcalPerMin > 0
+      ? target / rampKcalPerMin
+      : rampMin + Math.max(0, (target - rampKcal) / Math.max(activeKcalPerMin, 0.01));
     activeKcal = target;
   } else if (durationMin > 0 && rampMin > 0) {
-    const mainMinutes = Math.max(0, durationMin - rampMin);
-    activeKcal = rampKcal + mainMinutes * activeKcalPerMin;
+    const actualRampMinutes = Math.min(durationMin, rampMin);
+    const mainMinutes = Math.max(0, durationMin - actualRampMinutes);
+    activeKcal = rampKcalPerMin * actualRampMinutes + mainMinutes * activeKcalPerMin;
   }
 
   activeKcal += Math.max(0, module.cooldownActiveKcal ?? 0);

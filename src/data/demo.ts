@@ -14,6 +14,7 @@ export const demoProfile: BodyProfile = {
 
 export const demoGoal: GoalSettings = {
   mode: "lose",
+  goalDriver: "body-fat",
   targetWeightKg: 82,
   targetBodyFatPct: 0.15,
   targetWeeklyRatePct: 0.0075,

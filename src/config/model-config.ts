@@ -4,17 +4,20 @@
  * docs/BACKEND_EDITING.md before deploying.
  */
 export const MODEL_CONFIG = {
-  engineVersion: "1.0.0",
+  engineVersion: "2.0.0",
   energyDensityKcalPerKg: 7700,
   regression: {
-    minimumWindowDays: 14,
+    minimumPreviewDays: 14,
+    minimumWindowDays: 21,
     preferredWindowDays: 28,
+    maximumWindowDays: 42,
     minimumWeightPoints: 10,
     minimumIntakeDays: 10,
-    minimumIntakeCoverage: 0.7,
+    minimumPreviewCoverage: 0.7,
+    minimumIntakeCoverage: 0.8,
     factorFloor: 0.85,
     factorCeiling: 1.15,
-    maxAppliedUpdateWeight: 0.5,
+    maxAppliedUpdateWeight: 0.25,
     huberDeltaKg: 0.6,
   },
   tef: {
@@ -40,6 +43,8 @@ export const MODEL_CONFIG = {
   },
   projection: {
     maxWeeks: 104,
+    fatEnergyDensityKcalPerKg: 9440.7266,
+    leanEnergyDensityKcalPerKg: 1816.4436,
   },
 } as const;
 

@@ -76,6 +76,7 @@ export interface WeightObservation {
 
 export interface GoalSettings {
   mode: GoalMode;
+  goalDriver: "body-fat" | "weight";
   targetWeightKg?: number;
   targetBodyFatPct?: number;
   targetWeeklyRatePct: number;
@@ -105,6 +106,7 @@ export interface RegressionDay {
 }
 
 export interface RegressionResult {
+  status: "learning" | "preview" | "applied";
   rawFactor: number;
   appliedFactor: number;
   calibratedTdeeKcal: number;
@@ -115,10 +117,13 @@ export interface RegressionResult {
   intakeCoverage: number;
   r2: number;
   residualMaeKg: number;
+  likelyLowKcal: number;
+  likelyHighKcal: number;
   warnings: string[];
 }
 
 export interface ProjectionPoint {
+  day: number;
   week: number;
   date: string;
   weightKg: number;

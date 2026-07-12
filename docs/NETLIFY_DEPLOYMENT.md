@@ -5,7 +5,6 @@
 - GitHub or another supported Git provider
 - Netlify
 - Supabase
-- Optional OpenAI API key
 - Optional Apple Developer account for the HealthKit bridge
 
 ## Environment variables
@@ -14,11 +13,12 @@
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SECRET_KEY
-OPENAI_API_KEY
 MODEL_CRON_SECRET
 ```
 
-Only the first two are safe for browser exposure. The service key, OpenAI key and cron secret must remain server-side.
+Only the first two are safe for browser exposure. The service key and cron secret must remain server-side.
+
+Food-photo AI was removed in v1.3, so no OpenAI API key is required.
 
 ## Build configuration included in this pack
 
