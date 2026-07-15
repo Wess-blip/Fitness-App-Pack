@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useAppData } from "@/components/app-data-provider";
+import { SyncStatusBadge } from "@/components/sync-status-badge";
 import { PPL_PROGRAM } from "@/data/workout-program";
 import { buildPplSchedule } from "@/lib/engine";
 
 const dayShort = ["S", "M", "T", "W", "T", "F", "S"];
 
 export default function PlanPage() {
-  const { state, setState, syncStatus } = useAppData();
+  const { state, setState } = useAppData();
   const frequency = state.plan.frequency;
   const selected = state.plan.weekdays;
   const [openGuide, setOpenGuide] = useState<"push" | "pull" | "legs" | null>(null);
@@ -24,7 +25,7 @@ export default function PlanPage() {
   const schedule = useMemo(() => { try { return buildPplSchedule(selected, frequency); } catch { return []; } }, [selected, frequency]);
   return (
     <>
-      <header className="page-header colourful-header"><div><div className="eyebrow">Saved weekly setup</div><h1>Plan</h1><p style={{ margin: 0 }}>Pick PPL once or twice weekly. Your chosen days are user-specific and saved with the rest of the model.</p></div><span className="save-chip">{syncStatus === "saved" ? "Cloud saved" : "Local saved"}</span></header>
+      <header className="page-header colourful-header"><div><div className="eyebrow">Saved weekly setup</div><h1>Plan</h1><p style={{ margin: 0 }}>Pick PPL once or twice weekly. Your chosen days are user-specific and saved with the rest of the model.</p></div><SyncStatusBadge compact /></header>
       <section className="card tinted-card">
         <div className="segment" style={{ gridTemplateColumns: "repeat(2,1fr)" }}><button className={frequency === 3 ? "active" : ""} onClick={() => changeFrequency(3)}>PPL once · 3 days</button><button className={frequency === 6 ? "active" : ""} onClick={() => changeFrequency(6)}>PPL twice · 6 days</button></div>
         <div className="section day-picker">{dayShort.map((label, day) => <button key={day} className={selected.includes(day) ? "day-button selected" : "day-button"} onClick={() => toggleDay(day)}>{label}</button>)}</div>
