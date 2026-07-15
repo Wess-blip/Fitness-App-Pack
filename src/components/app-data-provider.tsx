@@ -9,7 +9,7 @@ import type { AppState } from "@/types/app-state";
 
 const LOCAL_KEY = "formlab-app-state-v1.2";
 
-type SyncStatus = "loading" | "local" | "saving" | "saved" | "error";
+export type SyncStatus = "loading" | "local" | "saving" | "saved" | "error";
 type AppDataContextValue = {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
@@ -18,6 +18,7 @@ type AppDataContextValue = {
   user: User | null;
   authReady: boolean;
   syncStatus: SyncStatus;
+  lastCloudSyncAt: string | null;
   signOut: () => Promise<void>;
 };
 
@@ -64,7 +65,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(!supabase);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("loading");
-  const loadedCloudFor = useRef<string | null>(null);
+  const [cloudLoadedFor, setCloudLoadedFor] = useState<string | null>(null);
+  const [lastCloudSyncAt, setLastCloudSyncAt] = useState<string | null>(null);
+  const loadingCloudFor = useRef<string | null>(null);
 
   useEffect(() => {
     try {
@@ -83,41 +86,72 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user ?? null);
       setAuthReady(true);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+      if (!nextUser) {
+        loadingCloudFor.current = null;
+        setCloudLoadedFor(null);
+        setLastCloudSyncAt(null);
+        setSyncStatus("local");
+      }
+    });
     return () => data.subscription.unsubscribe();
   }, [supabase]);
 
   useEffect(() => {
-    if (!ready || !user || !supabase || loadedCloudFor.current === user.id) return;
-    loadedCloudFor.current = user.id;
+    if (!ready || !user || !supabase || cloudLoadedFor === user.id || loadingCloudFor.current === user.id) return;
+    loadingCloudFor.current = user.id;
+    queueMicrotask(() => setSyncStatus("loading"));
     void supabase.from("user_app_state").select("state").eq("user_id", user.id).maybeSingle().then(({ data, error }) => {
+      loadingCloudFor.current = null;
+      if (error) {
+        setSyncStatus("error");
+        return;
+      }
       if (!error && data?.state) {
         setState(mergeState(data.state as Partial<AppState>));
-        setSyncStatus("saved");
+        setLastCloudSyncAt(new Date().toISOString());
       }
+      setCloudLoadedFor(user.id);
+      setSyncStatus(data?.state ? "saved" : "saving");
     });
-  }, [ready, user, supabase]);
+  }, [ready, user, supabase, cloudLoadedFor]);
 
   useEffect(() => {
     if (!ready) return;
     const next = { ...state, updatedAt: new Date().toISOString() };
     window.localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
     if (!user || !supabase) { queueMicrotask(() => setSyncStatus("local")); return; }
+    if (cloudLoadedFor !== user.id) {
+      queueMicrotask(() => setSyncStatus(loadingCloudFor.current === user.id ? "loading" : "error"));
+      return;
+    }
     queueMicrotask(() => setSyncStatus("saving"));
     const timer = window.setTimeout(() => {
       void supabase.from("user_app_state").upsert({ user_id: user.id, state: next, updated_at: new Date().toISOString() }, { onConflict: "user_id" })
-        .then(({ error }) => setSyncStatus(error ? "error" : "saved"));
+        .then(({ error }) => {
+          setSyncStatus(error ? "error" : "saved");
+          if (!error) setLastCloudSyncAt(new Date().toISOString());
+        });
     }, 700);
     return () => window.clearTimeout(timer);
-  }, [state, ready, user, supabase]);
+  }, [state, ready, user, supabase, cloudLoadedFor]);
 
   const patch = useCallback(<K extends keyof AppState>(section: K, value: Partial<AppState[K]>) => {
     setState((current) => ({ ...current, [section]: { ...(current[section] as object), ...value }, updatedAt: new Date().toISOString() }));
   }, []);
   const reset = useCallback(() => setState({ ...DEFAULT_APP_STATE, updatedAt: new Date().toISOString() }), []);
-  const signOut = useCallback(async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }, [supabase]);
+  const signOut = useCallback(async () => {
+    if (supabase) await supabase.auth.signOut();
+    loadingCloudFor.current = null;
+    setUser(null);
+    setCloudLoadedFor(null);
+    setLastCloudSyncAt(null);
+    setSyncStatus("local");
+  }, [supabase]);
 
-  return <AppDataContext.Provider value={{ state, setState, patch, reset, user, authReady, syncStatus, signOut }}>{children}</AppDataContext.Provider>;
+  return <AppDataContext.Provider value={{ state, setState, patch, reset, user, authReady, syncStatus, lastCloudSyncAt, signOut }}>{children}</AppDataContext.Provider>;
 }
 
 export function useAppData() {

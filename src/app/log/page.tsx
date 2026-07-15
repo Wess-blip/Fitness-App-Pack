@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useAppData } from "@/components/app-data-provider";
+import { SyncStatusBadge } from "@/components/sync-status-badge";
 import { UnitNumberInput } from "@/components/unit-number-input";
 import { ACTIVITY_CATALOG } from "@/data/activity-catalog";
 import { activeCaloriesFromMet } from "@/lib/engine";
@@ -14,7 +15,7 @@ const types: LogType[] = ["Food", "Weight", "Measurement", "Activity"];
 const number = (value: string) => Number.isFinite(Number(value)) ? Number(value) : 0;
 
 export default function LogPage() {
-  const { state, setState, patch, syncStatus } = useAppData();
+  const { state, setState, patch } = useAppData();
   const [type, setType] = useState<LogType>("Food");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [value, setValue] = useState("");
@@ -76,7 +77,7 @@ export default function LogPage() {
   }
 
   return <>
-    <header className="page-header colourful-header log-hero"><div><div className="eyebrow">Fast daily entry</div><h1>Log</h1><p>Planning works without logs. Complete food days and morning weights gradually improve TDEE calibration.</p></div><span className="save-chip">{syncStatus === "saved" ? "Cloud saved" : "Saved"}</span></header>
+    <header className="page-header colourful-header log-hero"><div><div className="eyebrow">Fast daily entry</div><h1>Log</h1><p>Planning works without logs. Complete food days and morning weights gradually improve TDEE calibration.</p></div><SyncStatusBadge compact /></header>
     <div className="segment log-tabs">{types.map((item) => <button key={item} className={type === item ? "active" : ""} onClick={() => { setType(item); setValue(""); }}>{item}</button>)}</div>
 
     <section className="section card quick-log-card">

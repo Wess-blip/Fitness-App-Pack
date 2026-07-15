@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Activity, Calculator, CheckCircle2, Ruler, Save, Target, UserRound } from "lucide-react";
+import { Activity, Calculator, CheckCircle2, Ruler, Target, UserRound } from "lucide-react";
 import { useAppData } from "@/components/app-data-provider";
 import { OverrideField } from "@/components/override-field";
+import { SyncStatusBadge } from "@/components/sync-status-badge";
 import { UnitNumberInput } from "@/components/unit-number-input";
 import { resolveAppModel } from "@/lib/app-state/resolve";
 import { kgToUnit, unitToKg } from "@/lib/units";
@@ -20,7 +21,7 @@ type Tab = typeof tabs[number]["id"];
 const numeric = (value: string, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
 export default function SetupPage() {
-  const { state, setState, patch, syncStatus, user } = useAppData();
+  const { state, setState, patch } = useAppData();
   const [tab, setTab] = useState<Tab>("about");
   const resolved = useMemo(() => resolveAppModel(state), [state]);
   const fieldUnits = state.profile.fieldUnits;
@@ -37,7 +38,7 @@ export default function SetupPage() {
   return <>
     <header className="page-header colourful-header setup-hero">
       <div><div className="eyebrow">Your calculation setup</div><h1>Build your plan</h1><p>Enter what you know. Auto fields stay linked; switch only the value you want to control to Manual.</p></div>
-      <div className={`save-chip ${syncStatus}`}><Save size={15} />{syncStatus === "saving" ? "Saving" : syncStatus === "error" ? "Saved on this device" : user ? "Cloud saved" : "Saved on this device"}</div>
+      <SyncStatusBadge />
     </header>
 
     <div className="setup-tabs guided-tabs">{tabs.map(({ id, label, Icon }, index) => <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}><span>{index + 1}</span><Icon size={16} />{label}</button>)}</div>
