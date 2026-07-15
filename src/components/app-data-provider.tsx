@@ -36,7 +36,11 @@ function mergeState(input: Partial<AppState> | null | undefined): AppState {
       fieldUnits: { ...fieldUnitsFromSystem(legacyUnits), ...input.profile?.fieldUnits },
     },
     baseline: { ...DEFAULT_APP_STATE.baseline, ...input.baseline },
-    goals: { ...DEFAULT_APP_STATE.goals, ...input.goals },
+    goals: {
+      ...DEFAULT_APP_STATE.goals,
+      ...input.goals,
+      stopMode: input.goals?.stopMode ?? (input.goals?.goalDriver === "weight" ? "weight" : "body-fat"),
+    },
     activity: {
       ...DEFAULT_APP_STATE.activity,
       ...input.activity,

@@ -28,14 +28,13 @@ function leanPartition(fatMassKg: number, energyBalance: number, proteinG: numbe
   return clamp(fraction, 0.02, 0.85);
 }
 
-function reachedGoal(goal: GoalSettings, initialWeightKg: number, initialBodyFatPct: number, weightKg: number, bodyFatPct: number) {
-  if (goal.goalDriver === "weight" && goal.targetWeightKg !== undefined) {
-    return goal.targetWeightKg <= initialWeightKg ? weightKg <= goal.targetWeightKg : weightKg >= goal.targetWeightKg;
-  }
-  if (goal.targetBodyFatPct !== undefined) {
-    return goal.targetBodyFatPct <= initialBodyFatPct ? bodyFatPct <= goal.targetBodyFatPct : bodyFatPct >= goal.targetBodyFatPct;
-  }
-  return false;
+export function reachedProjectionGoal(goal: GoalSettings, initialWeightKg: number, initialBodyFatPct: number, weightKg: number, bodyFatPct: number) {
+  const weightReached = goal.targetWeightKg !== undefined && (goal.targetWeightKg <= initialWeightKg ? weightKg <= goal.targetWeightKg : weightKg >= goal.targetWeightKg);
+  const bodyFatReached = goal.targetBodyFatPct !== undefined && (goal.targetBodyFatPct <= initialBodyFatPct ? bodyFatPct <= goal.targetBodyFatPct : bodyFatPct >= goal.targetBodyFatPct);
+  if (goal.stopMode === "weight") return weightReached;
+  if (goal.stopMode === "body-fat") return bodyFatReached;
+  if (goal.stopMode === "either") return weightReached || bodyFatReached;
+  return weightReached && bodyFatReached;
 }
 
 export function projectBodyComposition(args: {
@@ -82,7 +81,7 @@ export function projectBodyComposition(args: {
       tef = calculateTef(macros, args.calculationOptions);
     }
     tdee = (bmr + active + tef) * calibration * scenarioTdeeMultiplier(args.goal.mode, scenario);
-    const targetReached = reachedGoal(args.goal, initialWeightKg, initialBodyFatPct, weightKg, bodyFatPct);
+    const targetReached = reachedProjectionGoal(args.goal, initialWeightKg, initialBodyFatPct, weightKg, bodyFatPct);
     const minimumPbf = profile.sex === "male" ? MODEL_CONFIG.safety.minimumBodyFatPctMale : MODEL_CONFIG.safety.minimumBodyFatPctFemale;
     const safetyStop = bodyFatPct <= minimumPbf;
     const status = safetyStop ? "safety-stop" : targetReached ? (args.goal.onTarget === "maintenance" ? "maintenance" : "target-reached") : "active";

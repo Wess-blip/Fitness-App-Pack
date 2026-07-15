@@ -23,6 +23,7 @@ export const demoGoal: GoalSettings = {
   plannedProteinG: 180,
   plannedFatG: 70,
   sessionsPerWeek: 3,
+  stopMode: "body-fat",
   onTarget: "stop",
 };
 

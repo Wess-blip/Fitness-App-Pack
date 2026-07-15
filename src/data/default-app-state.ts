@@ -38,6 +38,7 @@ export const DEFAULT_APP_STATE: AppState = {
     targetWeeklyRatePct: 0.5,
     caloriePlanMode: "goal-driven",
     sessionsPerWeek: 3,
+    stopMode: "body-fat",
     onTarget: "stop",
   },
   activity: {

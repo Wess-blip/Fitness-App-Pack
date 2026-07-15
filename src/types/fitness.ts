@@ -5,6 +5,7 @@ export type TrainingExperience = "novice" | "intermediate" | "advanced";
 export type ActivityMode = "wearable-total" | "manual-total" | "components";
 export type CaloriePlanMode = "fixed" | "goal-driven";
 export type ProjectionScenario = "conservative" | "expected" | "optimistic";
+export type GoalStopMode = "weight" | "body-fat" | "either" | "both";
 
 export interface CalculationOptions {
   bmrWeights?: { mifflin: number; cunningham: number; katchMcArdle: number };
@@ -85,6 +86,7 @@ export interface GoalSettings {
   plannedProteinG?: number;
   plannedFatG?: number;
   sessionsPerWeek: number;
+  stopMode: GoalStopMode;
   onTarget: "stop" | "maintenance";
 }
 

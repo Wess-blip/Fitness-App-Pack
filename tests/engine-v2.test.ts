@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_APP_STATE } from "@/data/default-app-state";
-import { calibrateRollingTdee, calculateTreadmill, projectBodyComposition } from "@/lib/engine";
+import { calibrateRollingTdee, calculateTreadmill, projectBodyComposition, reachedProjectionGoal } from "@/lib/engine";
 import { resolveGoalTargets } from "@/lib/app-state/resolve";
+import { buildAppProjections, projectionEndpoint } from "@/lib/app-state/projections";
 import { cmToDisplay, cmToUnit, displayToCm, displayToKg, fieldUnitsFromSystem, formatInputNumber, kgToDisplay, kgToUnit, kmhToUnit, unitToCm, unitToKg, unitToKmh } from "@/lib/units";
 import { demoActivity, demoGoal, demoProfile } from "@/data/demo";
 import type { RegressionDay } from "@/types/fitness";
@@ -78,6 +79,33 @@ describe("projection physics and dates", () => {
     const result = calculateTreadmill(80, { enabled: true, speedKmh: 4, inclinePct: 10, targetActiveKcal: 10, rampMin: 10 });
     expect(result.durationMin).toBeLessThan(10);
     expect(result.activeKcal).toBe(10);
+  });
+});
+
+describe("projection stopping modes", () => {
+  const goal = { ...demoGoal, targetWeightKg: 80, targetBodyFatPct: 0.2 };
+  it("stops on weight only when weight is selected", () => {
+    expect(reachedProjectionGoal({ ...goal, stopMode: "weight" }, 100, 0.3, 79, 0.25)).toBe(true);
+    expect(reachedProjectionGoal({ ...goal, stopMode: "weight" }, 100, 0.3, 81, 0.19)).toBe(false);
+  });
+  it("stops on body fat only when body fat is selected", () => {
+    expect(reachedProjectionGoal({ ...goal, stopMode: "body-fat" }, 100, 0.3, 81, 0.19)).toBe(true);
+    expect(reachedProjectionGoal({ ...goal, stopMode: "body-fat" }, 100, 0.3, 79, 0.21)).toBe(false);
+  });
+  it("stops when either selected target is reached", () => {
+    expect(reachedProjectionGoal({ ...goal, stopMode: "either" }, 100, 0.3, 79, 0.25)).toBe(true);
+    expect(reachedProjectionGoal({ ...goal, stopMode: "either" }, 100, 0.3, 81, 0.19)).toBe(true);
+  });
+  it("requires both targets in both mode", () => {
+    expect(reachedProjectionGoal({ ...goal, stopMode: "both" }, 100, 0.3, 79, 0.25)).toBe(false);
+    expect(reachedProjectionGoal({ ...goal, stopMode: "both" }, 100, 0.3, 79, 0.19)).toBe(true);
+  });
+  it("provides one canonical expected endpoint for every page", () => {
+    const state = structuredClone(DEFAULT_APP_STATE);
+    state.model.projectionWeeks = 60;
+    const model = buildAppProjections(state);
+    expect(model.expectedEndpoint).toEqual(projectionEndpoint(model.projections.expected));
+    expect(model.expectedEndpoint.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 

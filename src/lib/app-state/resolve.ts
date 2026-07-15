@@ -45,7 +45,7 @@ export function resolveGoalTargets(state: AppState, currentLeanMassKg?: number) 
 
 export function toGoalSettings(state: AppState): GoalSettings {
   const targets = resolveGoalTargets(state);
-  return { mode: state.goals.mode, goalDriver: targets.goalDriver, targetWeightKg: targets.targetWeightKg, targetBodyFatPct: targets.targetBodyFatPct, targetWeeklyRatePct: state.goals.targetWeeklyRatePct / 100, caloriePlanMode: state.goals.caloriePlanMode, fixedCalories: state.goals.fixedCalories, plannedProteinG: state.goals.plannedProteinG, plannedFatG: state.goals.plannedFatG, sessionsPerWeek: state.goals.sessionsPerWeek, onTarget: state.goals.onTarget };
+  return { mode: state.goals.mode, goalDriver: targets.goalDriver, targetWeightKg: targets.targetWeightKg, targetBodyFatPct: targets.targetBodyFatPct, targetWeeklyRatePct: state.goals.targetWeeklyRatePct / 100, caloriePlanMode: state.goals.caloriePlanMode, fixedCalories: state.goals.fixedCalories, plannedProteinG: state.goals.plannedProteinG, plannedFatG: state.goals.plannedFatG, sessionsPerWeek: state.goals.sessionsPerWeek, stopMode: state.goals.stopMode, onTarget: state.goals.onTarget };
 }
 
 export function toActivityDefaults(state: AppState): ActivityDefaults {

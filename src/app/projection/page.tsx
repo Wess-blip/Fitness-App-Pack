@@ -6,13 +6,13 @@ import { useAppData } from "@/components/app-data-provider";
 import { ExpandablePanel } from "@/components/expandable-panel";
 import { MetricCard } from "@/components/metric-card";
 import { ModelChart } from "@/components/model-chart";
-import { normalizeWeights, resolveAppModel, sevenDayAverages, toActivityDefaults, toBodyProfile, toGoalSettings } from "@/lib/app-state/resolve";
-import { projectBodyComposition } from "@/lib/engine";
+import { resolveAppModel, sevenDayAverages } from "@/lib/app-state/resolve";
+import { buildAppProjections, reachedTargetPoint } from "@/lib/app-state/projections";
 import { kgToDisplay, weightUnit } from "@/lib/units";
 import type { ProjectionScenario } from "@/types/fitness";
 
 const labels: Record<ProjectionScenario, string> = { conservative: "Conservative", expected: "Expected", optimistic: "Optimistic" };
-const fullDate = (date?: string | null) => date ? new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : "Beyond selected horizon";
+const fullDate = (date?: string | null) => date ? new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : "Beyond selected horizon";
 
 export default function ProjectionPage() {
   const { state } = useAppData();
@@ -21,20 +21,12 @@ export default function ProjectionPage() {
   const [showTable, setShowTable] = useState(false);
   const resolved = useMemo(() => resolveAppModel(state), [state]);
   const averages = useMemo(() => sevenDayAverages(state), [state]);
-  const profile = useMemo(() => toBodyProfile(state), [state]);
-  const activity = useMemo(() => toActivityDefaults(state), [state]);
-  const baseGoal = useMemo(() => toGoalSettings(state), [state]);
-  const goal = useMemo(() => state.model.calorieTargetMode === "manual" ? { ...baseGoal, caloriePlanMode: "fixed" as const, fixedCalories: resolved.effectiveCalorieTargetKcal } : baseGoal, [baseGoal, resolved.effectiveCalorieTargetKcal, state.model.calorieTargetMode]);
-  const projectionFactor = resolved.effectiveTdeeKcal / Math.max(resolved.predictedTdeeKcal, 1);
-  const options = useMemo(() => ({ bmrWeights: normalizeWeights(state.model.bmrWeights), tefFallbackRate: state.model.tefFallbackRate }), [state.model.bmrWeights, state.model.tefFallbackRate]);
-  const projections = useMemo(() => {
-    const make = (item: ProjectionScenario) => projectBodyComposition({ startDate: state.baseline.startDate, profile, goal, activity, calibrationFactor: projectionFactor, weeks: state.model.projectionWeeks, scenario: item, calculationOptions: options });
-    return { conservative: make("conservative"), expected: make("expected"), optimistic: make("optimistic") };
-  }, [activity, goal, options, profile, projectionFactor, state.baseline.startDate, state.model.projectionWeeks]);
+  const projectionModel = useMemo(() => buildAppProjections(state, resolved), [resolved, state]);
+  const { profile, projections, expectedEndpoint, expectedTarget } = projectionModel;
   const selected = projections[scenario];
   const last = selected.points.at(-1)!;
   const reached = selected.points.find((point) => point.status !== "active");
-  const targetDates = Object.values(projections).map((result) => result.points.find((point) => point.status !== "active")?.date).filter((date): date is string => Boolean(date)).sort();
+  const targetDates = Object.values(projections).map((result) => reachedTargetPoint(result)?.date).filter((date): date is string => Boolean(date)).sort();
   const units = state.profile.unitSystem;
   const wUnit = weightUnit(units);
   const displayWeight = (kg: number) => kgToDisplay(kg, units);
@@ -45,15 +37,21 @@ export default function ProjectionPage() {
     <header className="page-header colourful-header projection-hero"><div><div className="eyebrow">Planning centre</div><h1>Your projection</h1><p>Exact dates, body composition, energy needs and three uncertainty scenarios.</p></div><span className="pill strong">{labels[scenario]}</span></header>
 
     <section className="target-date-card section">
-      <div><div className="eyebrow">Expected target date</div><strong>{fullDate(projections.expected.points.find((point) => point.status !== "active")?.date)}</strong><p>{targetDates.length > 1 ? `Likely range: ${fullDate(targetDates[0])} to ${fullDate(targetDates.at(-1))}` : "Add or adjust the projection horizon to see a likely range."}</p></div>
+      <div><div className="eyebrow">Expected target date</div><strong>{fullDate(expectedTarget?.date)}</strong><p>{targetDates.length > 1 ? `Likely range: ${fullDate(targetDates[0])} to ${fullDate(targetDates.at(-1))}` : "Add or adjust the projection horizon to see a likely range."}</p></div>
       <CalendarClock size={32} />
     </section>
 
     <section className="metric-grid projection-metrics">
-      <MetricCard label="Current weight" value={`${displayWeight(profile.weightKg).toFixed(1)} ${wUnit}`} detail={`Target ${displayWeight(resolved.targetWeightKg).toFixed(1)} ${wUnit} (${resolved.goalDriver === "weight" ? "chosen" : "auto"})`} icon={<Scale size={16} />} tone="blue" />
-      <MetricCard label="Current body fat" value={`${(resolved.bodyFatPct * 100).toFixed(1)}%`} detail={`Target ${(resolved.targetBodyFatPct * 100).toFixed(1)}% (${resolved.goalDriver === "body-fat" ? "chosen" : "auto"})`} icon={<Target size={16} />} tone="violet" />
+      <MetricCard label="Current weight" value={`${displayWeight(profile.weightKg).toFixed(1)} ${wUnit}`} detail={`Initial linked estimate ${displayWeight(resolved.targetWeightKg).toFixed(1)} ${wUnit}`} icon={<Scale size={16} />} tone="blue" />
+      <MetricCard label="Current body fat" value={`${(resolved.bodyFatPct * 100).toFixed(1)}%`} detail={`Configured target ${(resolved.targetBodyFatPct * 100).toFixed(1)}%`} icon={<Target size={16} />} tone="violet" />
       <MetricCard label="Lean mass" value={`${displayWeight(resolved.leanMassKg).toFixed(1)} ${wUnit}`} detail={`${displayWeight(resolved.fatMassKg).toFixed(1)} ${wUnit} fat mass`} icon={<Gauge size={16} />} tone="teal" />
       <MetricCard label="TDEE" value={`${Math.round(resolved.effectiveTdeeKcal)} kcal`} detail={`${resolved.calibration.status} · ${resolved.calibration.confidence} confidence`} icon={<Flame size={16} />} tone="orange" />
+    </section>
+
+    <section className="section card goal-resolution-card">
+      <div className="row"><div><div className="eyebrow">One goal, one endpoint</div><h2>{resolved.goalDriver === "body-fat" ? `${(resolved.targetBodyFatPct * 100).toFixed(1)}% body fat` : `${displayWeight(resolved.targetWeightKg).toFixed(1)} ${wUnit}`}</h2></div><span className="pill">{state.goals.stopMode.replace("body-fat", "body fat").replace("either", "either first")}</span></div>
+      <div className="dashboard-strip compact"><div><span>Initial linked estimate</span><strong>{displayWeight(resolved.targetWeightKg).toFixed(1)} {wUnit}</strong></div><div><span>Expected endpoint</span><strong>{displayWeight(expectedEndpoint.weightKg).toFixed(1)} {wUnit} · {(expectedEndpoint.bodyFatPct * 100).toFixed(1)}%</strong></div><div><span>Status</span><strong>{expectedTarget ? "Target reached" : "Beyond horizon"}</strong></div></div>
+      {resolved.goalDriver === "body-fat" && Math.abs(expectedEndpoint.weightKg - resolved.targetWeightKg) > 0.05 && <p className="small">The initial weight estimate holds lean mass constant. The expected projection updates lean and fat mass over time, so the estimated weight at the same body-fat target changes to {displayWeight(expectedEndpoint.weightKg).toFixed(1)} {wUnit}. Home and Progress use this same expected endpoint.</p>}
     </section>
 
     <section className="section dashboard-strip">
